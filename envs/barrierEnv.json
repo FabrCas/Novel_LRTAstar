@@ -1,0 +1,15 @@
+{
+    "barrier_env":{
+    
+        "nodes" = [
+        "info": {
+             "posx": 7,
+             "edges":[
+                     {
+                     }
+            ]
+        },
+
+        ]
+    }
+}
