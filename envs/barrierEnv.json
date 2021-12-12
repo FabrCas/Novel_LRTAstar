@@ -1,15 +1,67 @@
 {
     "barrier_env":{
     
-        "nodes" = [
-        "info": {
-             "posx": 7,
-             "edges":[
-                     {
-                     }
-            ]
-        },
-
+        "nodes" : [
+            {
+                "name": "a",        
+                "state": 7
+            },
+            {
+                "name": "d",       
+                "state": 8
+            },
+            {
+                "name": "b",           
+                "state": 4
+            },
+            {
+                "name": "e",           
+                "state": 3
+            },
+            {
+                "name": "f",           
+                "state": 0
+            },
+            {
+                "name": "c",           
+                "state": 6
+            },
+            {
+                "name": "g",           
+                "state": 0
+            }
+        ],
+        "edges" : [
+            {
+                "name": "d-a",
+                "cost": 7,
+                "is_directed" : false
+            },
+            {
+                "name": "a-b",
+                "cost": 3,
+                "is_directed" : false
+            },
+            {
+                "name": "b-e",
+                "cost": 10,
+                "is_directed" : false
+            },
+            {
+                "name": "e-f",
+                "cost": 5,
+                "is_directed" : false
+            },
+            {
+                "name": "a-c",
+                "cost": 4,
+                "is_directed" : false
+            },
+            {
+                "name": "c-g",
+                "cost": 11,
+                "is_directed" : false
+            }
         ]
     }
 }

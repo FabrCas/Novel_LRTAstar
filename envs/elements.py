@@ -7,6 +7,7 @@ class NodePos():
         self.name = name
         self.posx = posx
         self.posy = posy
+        self.heuristic = None
         self.edges = []
     
     def getName(self):
@@ -21,6 +22,9 @@ class NodePos():
     def getEdges(self):
         return self.edges
     
+    def getHeuristic(self):
+        return self.heuristic
+    
     def printEdges(self):
         [print(e) for e in self.edges]
     
@@ -31,6 +35,7 @@ class Node():
     def __init__(self, name, state):
         self.name = name
         self.state = state
+        self.heuristic = None
         self.edges = []
     
     def getName(self):
@@ -41,6 +46,9 @@ class Node():
     
     def getEdges(self):
         return self.edges
+    
+    def getHeuristic(self):
+        return self.heuristic
 
     def printEdges(self):
         [print(e) for e in self.edges]
@@ -52,22 +60,22 @@ class Node():
     
 # actions
 class Edge():
-    def __init__(self, node_a, node_b,cost, is_ordered):
+    def __init__(self, node_a, node_b,cost, is_directed):
         
         if not (type(node_a) == Node or type(node_a) == NodePos):
-            raise NameError("the node a is not a node object!")
+            raise NameError("the node a is not a node object!, but is {}".format(type(node_a)))
         
         if not (type(node_b) == Node or type(node_b) == NodePos):
-            raise NameError("the node b is not a node object!")
+            raise NameError("the node b is not a node object! but is {}".format(type(node_b)))
 
         self.node_a = node_a
         self.node_b = node_b
-        self.is_ordered = is_ordered
+        self.is_directed = is_directed
         self.cost = cost
-        if self.is_ordered:
-            self.name = "e_" + str(self.node_a.getName()) + "->" + str(self.node_b.getName()) 
-        else:
-            self.name = "e_" + str(self.node_a.getName()) + "<->" + str(self.node_b.getName())
+        # if self.is_directed:
+        self.name = "e_" + str(self.node_a.getName()) + "->" + str(self.node_b.getName()) 
+        # else:
+        #     self.name = "e_" + str(self.node_a.getName()) + "<->" + str(self.node_b.getName())
         
     def getName(self):
         return self.name
@@ -81,8 +89,8 @@ class Edge():
     def getCost(self):
         return self.cost
     
-    def getIsOrdered(self):
-        return self.is_ordered
+    def getIsDirected(self):
+        return self.is_directed
     
 
     
