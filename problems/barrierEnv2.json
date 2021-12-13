@@ -1,0 +1,49 @@
+{
+    "barrierEnv2":{
+    
+        "nodes" : [
+            {
+                "name": "a",        
+                "state": 8
+            },
+            {
+                "name": "d",       
+                "state": 5
+            },
+            {
+                "name": "b",           
+                "state": 3
+            },
+            {
+                "name": "e",           
+                "state": 0
+            },
+            {
+                "name": "c",           
+                "state": 3
+            }
+        ],
+        "edges" : [
+            {
+                "name": "a-d",
+                "cost": 8,
+                "is_directed" : false
+            },
+            {
+                "name": "a-b",
+                "cost": 7,
+                "is_directed" : false
+            },
+            {
+                "name": "b-c",
+                "cost": 3,
+                "is_directed" : false
+            },
+            {
+                "name": "d-e",
+                "cost": 9,
+                "is_directed" : false
+            }
+        ]
+    }
+}

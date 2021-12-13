@@ -4,7 +4,7 @@ from problems.elements import Node as Node
 from problems.elements import Edge as Edge
 
 
-class simpleTestEnv():
+class SimpleTestEnv():
     def __init__(self, name, initial_state):
         self.nodes = []
         self.learned_heuristics = {}
@@ -99,12 +99,22 @@ class simpleTestEnv():
 
 
 
-class barrierEnv1(simpleTestEnv):
+# optimality case
+class BarrierEnv1(SimpleTestEnv):
     
     def __init__(self, initial_state = "a", load_h = False):
         print("\n***************** creating the state space *******************\n") 
         # call superclass
         super().__init__("barrierEnv1", initial_state)
+        if load_h: self.loadHeuristics()
+
+# dead-end case    
+class BarrierEnv2(SimpleTestEnv):
+    
+    def __init__(self, initial_state = "a", load_h = False):
+        print("\n***************** creating the state space *******************\n") 
+        # call superclass
+        super().__init__("barrierEnv2", initial_state)
         if load_h: self.loadHeuristics()
         
     
