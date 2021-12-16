@@ -2,24 +2,23 @@ import json
 import os
 from problems.elements import Node as Node
 from problems.elements import Edge as Edge
+from problems.elements import NodeNpuzzle as Nodepuzzle
 
 
-class SimpleTestEnv():
+
+
+
+class problem():
     def __init__(self, name, initial_state):
         self.nodes = []
         self.learned_heuristics = {}
         self.name = name
         self.initial_state = initial_state
         
-    
-    
     def compute_heuristics(self,node):
         keys_list = list(self.learned_heuristics.keys())
         if not(node.name in keys_list):
-            """ 
-            heuristic obtained relaxing the problem:
-            identical to the horizonatal distance from the node to the barrier"""
-            node.heuristic = node.state
+            node.heuristic = self.initialHeuristic(node)
         else:
             node.heuristic = self.learned_heuristics[node.name]
     
@@ -44,7 +43,38 @@ class SimpleTestEnv():
             return self.learned_heuristics
         else:
             print("heuristics are not present")
-            
+    
+    def getLearnedeHeuristics(self):
+        return self.learned_heuristics
+    
+    def getNodes(self):
+        return self.nodes
+    
+    def getInitialState(self):
+        return self.initial_state
+    
+    def getName(self):
+        return self.name
+
+# *****************************************************************************
+
+"""
+first kind of problem:
+    simple path finding
+"""
+
+class SimpleTestEnv(problem):
+    def __init__(self, name, initial_state):
+        super().__init__(name, initial_state)
+
+    
+    def initialHeuristic(self,node):
+        """ 
+        heuristic obtained relaxing the problem:
+        identical to the horizonatal distance from the node to the barrier"""
+        return node.state
+        
+    
     def create_env(self):
         nodes = []
         file = open('./problems/'+ self.name +'.json')
@@ -87,17 +117,8 @@ class SimpleTestEnv():
         # return the list of nodes that are been connected       
         self.nodes = nodes
     
-    def getLearnedeHeuristics(self):
-        return self.learned_heuristics
-    
-    def getNodes(self):
-        return self.nodes
-    
-    def getInitialState(self):
-        return self.initial_state
-        
 
-
+# environments to test the correctness of the algoriht 
 
 # optimality case
 class BarrierEnv1(SimpleTestEnv):
@@ -118,12 +139,48 @@ class BarrierEnv2(SimpleTestEnv):
         if load_h: self.loadHeuristics()
         
     
+# *****************************************************************************
 
-
-           
+class Puzzle8(problem):
+    def __init__(self, initial_state = [[1,4,3],[7,None,6],[5,8,2]], load_h = False):
+        print("\n**************** initializing the problem ********************\n") 
+        # call superclass
+        super().__init__("8_puzzle", initial_state)
+        self.starting_node = None
+        if load_h: self.loadHeuristics()
+        
+    def compute_heuristics(self,node):
+        keys_list = list(self.learned_heuristics.keys())
+        if not(str(node.state) in keys_list):
+            node.heuristic = self.initialHeuristic(node)
+        else:
+            node.heuristic = self.learned_heuristics[str(node.state)]
             
-           
+    def memorize_heuristics(self,node,value):
+        # print(node.state)
+        self.learned_heuristics[str(node.state)] = value
 
+    # goal ->  [[1,2,3],[4,5,6],[7,8,None]]
+    def initialHeuristic(self, node):
+        state = node.state
+        relaxed_h = 9 - ((state[0][0]==1) + (state[0][1]==2) + (state[0][2]==3) + \
+        (state[1][0]==4) + (state[1][1]==5) + (state[1][2]==6) + \
+        (state[2][0]==7) + (state[2][1]==8) + (state[2][2]=="x"))
+        return relaxed_h
+       
+    def create_env(self): 
+        starting_node = Nodepuzzle(self.initial_state)
+        self.compute_heuristics(starting_node)
+        self.starting_node = starting_node
+        
+    def getStartingNode(self):
+        return self.starting_node
+        
 
-    
-    
+def getEnv(problem):
+    types = {
+        "BarrierEnv1": BarrierEnv1,
+        "BarrierEnv2":BarrierEnv2,
+        "8_puzzle": Puzzle8
+        }
+    return types[problem]

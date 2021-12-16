@@ -1,19 +1,22 @@
-import matplotlib.pyplot as mpl
-from problems.envs import BarrierEnv1, BarrierEnv2
-from algorithms import LRTAStar
+from problems.envs import getEnv
+from algorithms import getLRTA
 
+problems = ["BarrierEnv1","BarrierEnv2","8_puzzle"]
 
 if __name__ == "__main__":
     
     # choose the problem
-    env = BarrierEnv2()
+    problem = problems[2]
+    env = getEnv(problem)(load_h = False)
+    
     # create graph
     env.create_env()
+    
     # LRTA* algorithm definition
-    lrta_star = LRTAStar(env, 0)
+    lrta_star = getLRTA(problem)(env)
     
     # execute(simluation + optimal execution) or just run the algorithm with forward
-    # lrta_star.forward(True)
-    lrta_star.execution()
-    
+    lrta_star.forward(save_h = True , verbose = True)
+    # lrta_star.simulate(n_simulation= 100,save_h = True , verbose = False)
+    # lrta_star.execution()
     

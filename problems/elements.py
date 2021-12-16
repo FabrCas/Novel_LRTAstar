@@ -1,4 +1,19 @@
 import os
+import math
+from colorama import init, Fore, Back, Style
+
+
+def colored(r, g, b, text):
+    return "\033[38;2;{};{};{}m{} \033[38;2;255;255;255m".format(r, g, b, text)
+
+def printCorrect(text):
+    return colored(0,255,0, text)
+    
+def printWrong(text):
+    return colored(255,0,0,text)
+
+def printFree(text):
+    return colored(255,255,255, text)
 
 
 # states
@@ -55,7 +70,80 @@ class Node():
     
     def addEdge(self,edge):
         if type(edge) == Edge: self.edges.append(edge)
-        else: print("you can only add edge object to the list of edges!")
+        else: print(printWrong("you can only add edge object to the list of edges!"))
+
+class NodeNpuzzle():
+    def __init__(self, state, n_puzzle = 9):
+        self.state = state #[[None] * int(math.sqrt(n_puzzle))] * int(math.sqrt(n_puzzle))
+        self.heuristic = None
+        self.adjNodes = []
+        self.n_puzzle = n_puzzle
+        
+    """
+    the class has been modelled to have no information about the edges, 'cause possible states
+    are estimted in run-time and the cost of the action to move the tile is unitary (c(s,s') = 1)
+    for all the possible directions 
+    """
+    
+    def getName(self, goal = [[1,2,3],[4,5,6],[7,8,None]]):   
+        name = ""
+        for i,rows in enumerate(self.state):
+            for j,elem in enumerate(rows):
+                if not(elem == None):    
+                    if elem == goal[i][j]: name = name + printCorrect("["+ str(elem) + "] ")
+                    else:  name = name + printWrong("["+ str(elem) + "] ")
+                else:
+                    # if elem == goal[i][j]: name = name + printCorrect("[x] ")
+                    # else: name = name + printWrong("[x] ")
+                    name = name + printFree("[x] ")
+            name = name + "\n"
+        return name
+ 
+    
+    def getState(self):
+        return self.state
+    
+    def getHeuristic(self):
+        return self.heuristic
+    
+    def get_n(self):
+        return self.n_puzzle
+    
+    def getPositionFreeTileCentered(self):
+        offset = int(math.sqrt(self.n_puzzle)//2)
+        for i,row in enumerate(self.state):
+            for j,elem in enumerate(row):
+                if elem == None:
+                    return (i-offset,j-offset) # centred the index to be 0,0 at the center
+                
+    def getPositionFreeTile(self):
+        for i,row in enumerate(self.state):
+            for j,elem in enumerate(row):
+                if elem == None:
+                    return (i,j) # centred the index to be 0,0 at the center
+            
+    def getPossibleMoves(self):
+        pos = self.getPositionFreeTileCentered()
+        
+        # (m,x) coordinates of the matrix position, moving vertically i change row
+        # while moving horizonatally i change columns
+        moves ={"north":(-1,0),"south":(1,0),"west":(0,-1),"east":(0,1)}
+        # remove moves if empty tile on the edge of the board
+        
+        
+        if (pos[1] == -1): del moves['west']
+        if (pos[1] ==  1): del moves['east']
+        if (pos[0] == -1): del moves['north']
+        if (pos[0] ==  1): del moves['south']
+        
+        return moves
+    
+    def addAdjacentNode(self,node):
+        if type(node) == NodeNpuzzle: self.adjNodes.append(node)
+        else: print(printWrong("you can only add NodeNpuzzle object to the list of adjacent nodes!"))
+        
+    def getAdjacentNodes(self):
+        return self.adjNodes
     
     
 # actions
@@ -92,8 +180,3 @@ class Edge():
     def getIsDirected(self):
         return self.is_directed
     
-
-    
-    
-    
-        
