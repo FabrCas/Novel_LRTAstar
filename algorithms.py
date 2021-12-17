@@ -107,13 +107,14 @@ class LRTAnPuzzle():
         else: self.goal = None 
         
         self.env = env
-        self.plan = [self.start.getState()] # a list of edges
+        self.plan = [] # a list of edges
         # self.h_updated = False
         self.n_simulation = n_simulation
         self.depth_simulations = depth_simulations
         
 
     def forward(self, save_h = False, verbose = True):
+        
         h_updated = False # initialize the flag for updates to false
         goal_found = False
         iteration = 0 
@@ -122,6 +123,7 @@ class LRTAnPuzzle():
     
         total_cost_acc = 0
         actual_state = self.start
+        self.plan.append(actual_state)
         
         # while not (actual_state.state == self.goal):
         while (iteration < self.depth_simulations) and (not (actual_state.state == self.goal)):   
@@ -194,8 +196,9 @@ class LRTAnPuzzle():
                         
             # move to next state
             print("- Next state is:")if verbose else 0
-            print(node.getName())if verbose else 0
+
             actual_state = next_node
+            print(actual_state.getName())if verbose else 0
             self.plan.append(next_node)
             if actual_state.state == self.goal: goal_found = True
             

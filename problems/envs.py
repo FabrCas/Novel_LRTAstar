@@ -142,12 +142,33 @@ class BarrierEnv2(SimpleTestEnv):
 # *****************************************************************************
 
 class Puzzle8(problem):
+    # not all the inital state can be solvable, we have to check that the number of
+    # invertions it's odd.
     def __init__(self, initial_state = [[1,4,3],[7,None,6],[5,8,2]], load_h = False):
         print("\n**************** initializing the problem ********************\n") 
         # call superclass
         super().__init__("8_puzzle", initial_state)
         self.starting_node = None
         if load_h: self.loadHeuristics()
+        self._isSolvable(initial_state)
+        
+        
+    def _getInvertions(self,state):
+        inv_count = 0
+        empty_value = None
+        for i in range(0, 9):
+            for j in range(i + 1, 9):
+                if state[j] != empty_value and state[i] != empty_value and state[i] > state[j]:
+                    inv_count += 1
+        return inv_count
+        
+    def _isSolvable(self, initial_state):
+        list_values = [j for sub in initial_state for j in sub]
+        inv_count = self._getInvertions(list_values)
+        if not (inv_count % 2 == 0):
+            raise NameError("The selected state of the 8 puzzle problem it's impossible to solve!")
+        else: print("the problem is solvable")
+            
         
     def compute_heuristics(self,node):
         keys_list = list(self.learned_heuristics.keys())
@@ -163,7 +184,7 @@ class Puzzle8(problem):
     # goal ->  [[1,2,3],[4,5,6],[7,8,None]]
     def initialHeuristic(self, node):
         state = node.state
-        relaxed_h = 9 - ((state[0][0]==1) + (state[0][1]==2) + (state[0][2]==3) + \
+        relaxed_h = 8 - ((state[0][0]==1) + (state[0][1]==2) + (state[0][2]==3) + \
         (state[1][0]==4) + (state[1][1]==5) + (state[1][2]==6) + \
         (state[2][0]==7) + (state[2][1]==8) + (state[2][2]=="x"))
         return relaxed_h
