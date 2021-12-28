@@ -219,16 +219,47 @@ class Escape(problem):
         # call superclass
         super().__init__("escape", initial_state)
         self.state = None
+        self.blue_door_pos = None
+        self.red_door_pos = None
+        self.red_key_pos = None 
+        self.blue_key_pos = None 
         if load_h: self.loadHeuristics()
+    
+    def _manhattanDistance(self, pos1,pos2):
+        return abs(pos1[0]- pos2[0]) + abs(pos1[1] - pos2[1])
+        
         
     def initialHeuristic(self, state):
-        distance1 = 0
-        distance2 = 0
-        return min(distance1,distance2)
+        state_info = state.getState()
+
+        pos = (state_info[0],state_info[1])
+        has_rk = state_info[2]
+        has_bk = state_info[3]
+        # print(self.blue_door_pos)
+        # print(self.red_door_pos)
+        # print(self.blue_key_pos)
+        # print(self.red_key_pos)
+        # print(pos)
+        
+        # initialize the 2 distances
+        red_distance = self._manhattanDistance(pos, self.red_key_pos) + self._manhattanDistance(self.red_key_pos, self.red_door_pos)
+        blue_distance = self._manhattanDistance(pos, self.blue_key_pos) + self._manhattanDistance(self.blue_key_pos, self.blue_door_pos)
+        
+        
+        if has_bk:
+            red_distance = self._manhattanDistance(pos, self.red_key_pos) + self._manhattanDistance(self.red_key_pos, self.red_door_pos)
+            blue_distance = self._manhattanDistance(pos, self.blue_door_pos)
+        elif has_rk:
+            red_distance = self._manhattanDistance(pos, self.red_door_pos)
+            blue_distance = self._manhattanDistance(pos, self.blue_key_pos) + self._manhattanDistance(self.blue_key_pos, self.blue_door_pos)
+        
+        
+        return min(red_distance,blue_distance)
     
     # this time the heuristic is not pre-evaluated, but directly on the algorithm
     # attention: heuristic from the state and not from the node (more info about key obtained)
-    def compute_heuristics(self, state):
+    def compute_heuristics(self, state = None):
+        if state == None: state = self.state
         
         keys_list = list(self.learned_heuristics.keys())
         if not(str(state.getState()) in keys_list):
@@ -265,6 +296,16 @@ class Escape(problem):
             # save a reference to the actual state for the environmnet problem
             if node_data['state']['posRow'] == self.initial_state[0] and node_data['state']['posColumn'] == self.initial_state[1]:
                 starting_node = tmp_node
+            
+            # save door position
+            if node_data['state']['type'] == "blue_door":
+                self.blue_door_pos = ( node_data['state']['posRow'], node_data['state']['posColumn'] )
+            elif node_data['state']['type'] == "red_door":
+                self.red_door_pos = ( node_data['state']['posRow'], node_data['state']['posColumn'] )
+            if node_data['state']['type'] == "blue_key":
+                self.blue_key_pos = ( node_data['state']['posRow'], node_data['state']['posColumn'] )
+            elif node_data['state']['type'] == "red_key":
+                self.red_key_pos = ( node_data['state']['posRow'], node_data['state']['posColumn'] )
                 
         # create edges
         for edge_data in edges_data:

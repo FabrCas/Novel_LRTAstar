@@ -185,11 +185,11 @@ class NodeEscape():
         else: print(printWrong("you can only add edge object to the list of edges!"))
         
 class StateEscape():
-    def __init__(self, initialState):
+    def __init__(self, initialState, hasRedKey = False, hasBlueKey = False):
         if type(initialState) == NodeEscape: self.position = initialState
         else: print(printWrong("you can only initilize with NodeEscape object the inital position!"))
-        self.hasRedKey = False
-        self.hasBlueKey = False
+        self.hasRedKey = hasRedKey
+        self.hasBlueKey = hasBlueKey
     
     def collectRedKey(self):
         self.hasRedKey = True

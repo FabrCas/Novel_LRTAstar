@@ -14,15 +14,15 @@ if __name__ == "__main__":
     # create graph
     # env.selectHardState1()
     env.create_env()
-
+    
     
     # LRTA* algorithm definition
-    # lrta_star = getLRTA(problem)(env, depth_simulations = 1000)
+    lrta_star = getLRTA(problem)(env)
     
     """ execute(simluation + optimal execution) or just run the algorithm with forward """
-    # lrta_star.forward(save_h = True , verbose = False)
+    # lrta_star.forward(save_h = True , verbose = True)
     # lrta_star.simulate(n_simulation= math.inf,save_h = True , verbose = False)
     
     
     """ simulation + final forward """
-    # lrta_star.execution() 
+    lrta_star.execution() 
