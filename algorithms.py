@@ -116,6 +116,7 @@ class LRTAnPuzzle():
     def forward(self, save_h = False, verbose = True):
         
         h_updated = False # initialize the flag for updates to false
+        updates = {}
         goal_found = False
         iteration = 0 
         startTime = time.time()
@@ -163,7 +164,7 @@ class LRTAnPuzzle():
             # evaluate next state
             # find the lowest estimated cost
                 
-            print()
+            print()  if verbose else 0
             print("- Analyzing moves:") if verbose else 0
             next_node = None
             chosen_edge = None
@@ -187,10 +188,12 @@ class LRTAnPuzzle():
             if(lowest_cost_f > actual_state.heuristic):
                 print("- Updating heuristic from {} to {}, for the actual state".format(actual_state.heuristic,lowest_cost_f))if verbose else 0
     
-                
+                updates[str(actual_state.state)] = "from: " + str(actual_state.heuristic) + " to: " + str(lowest_cost_f)
                 actual_state.heuristic = lowest_cost_f
                 self.env.memorize_heuristics(actual_state,lowest_cost_f)
                 if not(h_updated): h_updated = True
+                
+                
             else:
                 print("- No update")if verbose else 0
                         
@@ -206,14 +209,17 @@ class LRTAnPuzzle():
         
         print("\n-----------[Final recap]-----------\n") if verbose else 0
         print("\n- End execution, time: {} [s]".format( (time.time() -startTime) )) if verbose else 0
+        
         if h_updated:
-            print("- The heuristic has been updated")if verbose else 0
+            print("- The heuristic has been updated, updates:")
+            for k,v in updates.items():
+                print(k+"  ------>    "+v +"\n")
         else:
-            print("- The heuristic hasn't been updated")if verbose else 0
+            print("- The heuristic hasn't been updated")
         
         if goal_found:
             print("- The goal has been found with the cost/a number of iterations equal to {}". format(iteration))
-            if (len(self.plan)) > 100:
+            if (len(self.plan)) > 35:
                 print("\n- The Plan is too long to be printed:")
             else:
                 print("\n- Plan:") 
@@ -227,16 +233,17 @@ class LRTAnPuzzle():
         if save_h: self.env.saveHeuristics()
         return h_updated
         
-    def simulate(self, n_simulation = math.inf, depth_simulations = 500 ,save_h = False, verbose = True): # todo
+    def simulate(self, n_simulation = math.inf ,save_h = False, verbose = False): # todo
     
         self.n_simulation = n_simulation
-        self.depth_simulations = depth_simulations
+        # self.depth_simulations = depth_simulations
+        
         print("\n********************* Simulating LSTA* ***********************\n")
         
         if self.n_simulation == math.inf:
-            convergence = not(self.forward(False,False))
+            convergence = not(self.forward(save_h,verbose))
             while(not(convergence)):
-                convergence = not(self.forward(False,False))
+                convergence = not(self.forward(save_h,verbose))
         else:
             for i in range(self.n_simulation):
                 self.forward(save_h, verbose)
@@ -246,7 +253,8 @@ class LRTAnPuzzle():
         self.simulate()
         print("\n********************* Execution LSTA* ************************\n")
         self.forward(True,True)
-        
+
+
             
 def getLRTA(problem):
     types = {

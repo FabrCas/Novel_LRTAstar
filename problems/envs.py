@@ -1,8 +1,11 @@
 import json
 import os
+import math
 from problems.elements import Node as Node
 from problems.elements import Edge as Edge
 from problems.elements import NodeNpuzzle as Nodepuzzle
+from problems.elements import StateEscape as StateEscape
+from problems.elements import NodeEscape as NodeEscape
 
 
 
@@ -22,14 +25,14 @@ class problem():
         else:
             node.heuristic = self.learned_heuristics[node.name]
     
+    def memorize_heuristics(self,node,value):
+        self.learned_heuristics[node.name] = value
+    
     def clean_heuristicsMemorized(self):
         del(self.learned_heuristics)
         self.learned_heuristics = {}
         file = open('./problems/'+ self.name +'H.json', "w")
         json.dump({}, file)
-    
-    def memorize_heuristics(self,node,value):
-        self.learned_heuristics[node.name] = value
     
     def saveHeuristics(self):
         file = open('./problems/'+ self.name +'H.json', "w")
@@ -140,6 +143,10 @@ class BarrierEnv2(SimpleTestEnv):
         
     
 # *****************************************************************************
+"""
+second kind of problem:
+    solve n-puzzle problems 
+"""
 
 class Puzzle8(problem):
     # not all the inital state can be solvable, we have to check that the number of
@@ -151,6 +158,12 @@ class Puzzle8(problem):
         self.starting_node = None
         if load_h: self.loadHeuristics()
         self._isSolvable(initial_state)
+        
+    def selectHardState1(self):
+        self.initial_state = [[8,6,7],[2,5,4],[3,None,1]]  # minimum number of moves is 31
+        
+    def selectHardState2(self):
+        self.initial_state = [[6,4,7],[8,5,None],[3,2,1]]  # minimum number of moves is 31
         
         
     def _getInvertions(self,state):
@@ -196,12 +209,106 @@ class Puzzle8(problem):
         
     def getStartingNode(self):
         return self.starting_node
+    
+# *****************************************************************************
+# cost edges -> ceil of the euclidean distance in the cartesian plane * 3 (diagonal) or * 2 (horizontal and vertical)
+
+class Escape(problem):
+    def __init__(self, initial_state = (4,5), load_h = False):
+        print("\n**************** initializing the problem ********************\n") 
+        # call superclass
+        super().__init__("escape", initial_state)
+        self.state = None
+        if load_h: self.loadHeuristics()
         
+    def initialHeuristic(self, state):
+        distance1 = 0
+        distance2 = 0
+        return min(distance1,distance2)
+    
+    # this time the heuristic is not pre-evaluated, but directly on the algorithm
+    # attention: heuristic from the state and not from the node (more info about key obtained)
+    def compute_heuristics(self, state):
+        
+        keys_list = list(self.learned_heuristics.keys())
+        if not(str(state.getState()) in keys_list):
+            h = self.initialHeuristic(state)
+        else:
+            h = self.learned_heuristics[str(state.getState())]
+        return h
+    
+    def memorize_heuristics(self,state,value):
+        # print(node.state)
+        self.learned_heuristics[str(state.getState())] = value
+        
+    def create_env(self):
+        
+        nodes = []
+        
+        starting_node = None
+        file = open('./problems/'+ self.name +'.json')
+        data = json.load(file)[self.name]
+        nodes_data = data['nodes']
+        edges_data = data['edges']
+        # print(nodes_data)
+        # print(edges_data)
+        # create nodes
+        for node_data in nodes_data:
+            print("creating the node {} ...".format(node_data['name']))
+            
+            tmp_node = NodeEscape(node_data['name'],node_data['state']['posRow'], node_data['state']['posColumn'], node_data['state']['type'])
+
+            # h(s) not pre-computed here
+            
+            nodes.append(tmp_node)
+            
+            # save a reference to the actual state for the environmnet problem
+            if node_data['state']['posRow'] == self.initial_state[0] and node_data['state']['posColumn'] == self.initial_state[1]:
+                starting_node = tmp_node
+                
+        # create edges
+        for edge_data in edges_data:
+            
+            from_to = edge_data['name'].split("-")
+            name_node_a = from_to[0]
+            name_node_b = from_to[1]
+            print("creating the edge {}->{} ...".format(name_node_a,name_node_b))
+            nodeA = None
+            nodeB = None
+            
+            for node in nodes:
+                if node.name == name_node_a:
+                    nodeA = node
+                elif node.name == name_node_b:
+                    nodeB = node
+                else:
+                    continue
+            
+            edge = Edge(nodeA, nodeB, edge_data['cost'])
+            nodeA.addEdge(edge)
+            
+            # unoriented edges, add the one in the opposite direction
+
+            edge2 = Edge(nodeB, nodeA, edge_data['cost'])
+            print("creating the edge {}->{} ...".format(name_node_b,name_node_a))
+            nodeB.addEdge(edge2)
+                
+        # create the actual state for the environment
+        
+        self.state = StateEscape(starting_node)
+        
+    def getState(self):
+        return self.state
+        
+    
+    
+# *****************************************************************************        
 
 def getEnv(problem):
     types = {
         "BarrierEnv1": BarrierEnv1,
         "BarrierEnv2":BarrierEnv2,
-        "8_puzzle": Puzzle8
+        "8_puzzle": Puzzle8,
+        "Escape": Escape
         }
     return types[problem]
