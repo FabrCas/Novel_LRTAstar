@@ -156,15 +156,32 @@ class Puzzle8(problem):
         # call superclass
         super().__init__("8_puzzle", initial_state)
         self.starting_node = None
+        
+        # select here other configutions
+        self.selectMidState2()
         if load_h: self.loadHeuristics()
         self._isSolvable(initial_state)
+        
+        
         
     def selectHardState1(self):
         self.initial_state = [[8,6,7],[2,5,4],[3,None,1]]  # minimum number of moves is 31
         
     def selectHardState2(self):
         self.initial_state = [[6,4,7],[8,5,None],[3,2,1]]  # minimum number of moves is 31
+    
+    def selectEasyState(self):
+        self.initial_state = [[1,3,5],[4,2,None],[7,8,6]]  # minimum number of moves is 5
         
+    def selectEasyState2(self):
+            self.initial_state = [[1,3,5],[7,4,6],[None,2,8]]  # minimum number of moves is 10
+
+    def selectMidState(self):  # default one
+                self.initial_state = [[1,4,3],[7,None,6],[5,8,2]]  # minimum number of moves is 14
+                    
+    def selectMidState2(self):
+            self.initial_state = [[7,1,5],[3,None,6],[2,4,8]]  # minimum number of moves is 16
+            
         
     def _getInvertions(self,state):
         inv_count = 0
