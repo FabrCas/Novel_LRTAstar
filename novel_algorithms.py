@@ -1,22 +1,27 @@
-import os
 import math
 import time
 from problems.elements import NodeNpuzzle as Nodepuzzle
 from problems.elements import StateEscape as StateEscape
 from problems.elements import NodeEscape as NodeEscape
 from problems.elements import printCorrect, printWrong
-from copy import deepcopy, copy
+from copy import deepcopy
+import scipy.stats
+import random
+
+# random.seed(time.time())
+random.seed(22)
 
 """ novelties: 
-- disambiguity on f(n) method
+- disambiguity on f(n) method -> novel_1
+- set h(n) to inf for unreversable dead ends
 - 
 """
-    
-    
+
+
     
 class NovelLRTAStarBarrierEnv():
     
-    def __init__(self, env, state_goal = 0, n_simulation = math.inf):
+    def __init__(self, env, state_goal = 0, n_simulation = math.inf, depth_simulations = 8 ,novelties = []):
         print("\n********************** Starting LSTA* ************************\n")
         self.start = [node for node in env.getNodes() if node.name==env.getInitialState()][0] #this represent the initial state for the algorithm
         self.goal = state_goal
@@ -24,20 +29,18 @@ class NovelLRTAStarBarrierEnv():
         self.plan = [] # a list of edges
         # self.h_updated = False
         self.n_simulation = n_simulation
-    
-    # implement simulation and exectution separetely
+        self.depth_simulations = depth_simulations
+        self.novelties = novelties
+        self.depth_cap = self.depth_simulations
+        if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
+           
+           
     
     """
     2 simple aspects to decide where move at parity of f(s)
     - the only next state of a possible next state is the current state? avoid it is a dead end (reversable in this case, but still a useless move)
     - at parity of f(s), make a step forward to look at the minimum f(s), the choice is prefer the one with has a min one ahead f(s)
     """
-    
-    # def _checkDeadEnd(self,actualState, nextStates):
-    #     edges = nextState.edges
-    #     if len(edges) == 0 && edges[0]..getNode_b() is actualState:
-    #         nextState.heuristic = math.inf
-    
     
     
     def _minFs(self, state):
@@ -76,7 +79,11 @@ class NovelLRTAStarBarrierEnv():
         return chosen_state
         
     
-    def forward(self, save_h = False, verbose = True):
+    def forward(self, save_h = False, verbose = True, final_execution= False):
+        
+        if final_execution: self.depth_cap = self.depth_simulations
+       
+        
         h_updated = False # initialize the flag for updates to false
         iteration = 0 
         startTime = time.time()
@@ -86,8 +93,16 @@ class NovelLRTAStarBarrierEnv():
         total_cost_acc = 0
         actual_state = self.start
         
-        while not (actual_state.state == self.goal):
-        # for i in range(6):
+        while (iteration < self.depth_cap) and not (actual_state.state == self.goal):
+        
+            if "gaussian_restart" in self.novelties and not(final_execution):
+                prob = round(scipy.stats.norm(self.depth_cap/2,1).pdf(iteration),5) 
+                rnd_n = round(random.random(),5)
+                # print("g_prob {}, rnd_n {}".format(prob,rnd_n))
+                if rnd_n <= prob:
+                    print("exiting for gaussian restart")
+                    break
+                    
             print("\n-----------[Iteration n°{}]-----------\n".format(iteration +1)) if verbose else 0
             # evaluate next state
             print("- Looking edges of state {}".format(actual_state.name)) if verbose else 0
@@ -96,7 +111,7 @@ class NovelLRTAStarBarrierEnv():
             chosen_edge = None
             lowest_cost_f = math.inf # initialize the smallest cost with infinite
             lowest_cost_c = math.inf
-            next_possible_states = [] # more states can have same f(n) here is introduced a policy to choose 
+            if "f(n)_disambiguity" in self.novelties: next_possible_states = [] # more states can have same f(n) here is introduced a policy to choose 
             for edge in actual_state.edges:
                 other_node = edge.getNode_b()
                 
@@ -105,37 +120,45 @@ class NovelLRTAStarBarrierEnv():
                 f_i = c_i + h_i # estimated cost
                 print("- Evaluating motion to {}, estimated cost f= c(s,s') + h(s') = {} + {} = {}".format(other_node.name, c_i,h_i,f_i)) if verbose else 0
                 
-                if(f_i < lowest_cost_f):
-                    lowest_cost_f = f_i
-                    next_possible_states = [other_node]
-                elif(f_i == lowest_cost_f):
-                    next_possible_states.append(other_node)
+                if "f(n)_disambiguity" in self.novelties: 
+                    if(f_i < lowest_cost_f):
+                        lowest_cost_f = f_i
+                        next_possible_states = [other_node]
+                    elif(f_i == lowest_cost_f):
+                        next_possible_states.append(other_node)
+                else:
+                    if(f_i < lowest_cost_f):
+                        lowest_cost_f = f_i
+                        lowest_cost_c = c_i
+                        next_node = other_node
+                        chosen_edge = edge
                 
                     
 
+            if "f(n)_disambiguity" in self.novelties: 
                 
-            # what choose?
-            if not len(next_possible_states) == 1: # more choices 
-                next_node = self._oneStepCheck(actual_state, next_possible_states)
-            else: 
-                next_node = next_possible_states[0]
+                # what choose?
+                if not len(next_possible_states) == 1: # more choices 
+                    next_node = self._oneStepCheck(actual_state, next_possible_states)
+                else: 
+                    next_node = next_possible_states[0]
+                
+                # get info for the plan and final cost
+                for edge in actual_state.edges:
+                    other_node = edge.getNode_b()
+                    if other_node is next_node:
+                        chosen_edge =  edge
+                        break
             
-            # unreversable dead end check
-            if len(next_possible_states)==0:    
-                print("found a dead end")
-                actual_state.heuristic = math.inf 
-                self.env.memorize_heuristics(actual_state,math.inf)
-                if not(h_updated): h_updated = True
-                continue 
+                lowest_cost_c = chosen_edge.cost
             
-            # get info for the plan and final cost
-            for edge in actual_state.edges:
-                other_node = edge.getNode_b()
-                if other_node is next_node:
-                    chosen_edge =  edge
-                    break
-            
-            lowest_cost_c = chosen_edge.cost
+                # unreversable dead end check
+                if len(next_possible_states)==0:    
+                    print("found a dead end")
+                    actual_state.heuristic = math.inf 
+                    self.env.memorize_heuristics(actual_state,math.inf)
+                    if not(h_updated): h_updated = True
+                    continue 
             
             
             print("- All edges checked")if verbose else 0
@@ -160,16 +183,29 @@ class NovelLRTAStarBarrierEnv():
             print("- Actual cost for the plan {}".format(total_cost_acc)) if verbose else 0
         
         print("\n-----------[Final recap]-----------\n") if verbose else 0
-        print("- The goal has been found in the state {}". format(actual_state.name)) 
-        print("- Definitive cost for the plan {}".format(total_cost_acc)) 
-        print("\n- Plan:") 
-        for action in self.plan:
-            print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+        
+        if actual_state.state == self.goal:
+            print("- The goal has been found in the state {}". format(actual_state.name)) 
+            print("- Definitive cost for the plan {}".format(total_cost_acc)) 
+            print("\n- Plan:") 
+            for action in self.plan:
+                print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+            if "dynamic_depth_limit" in self.novelties:
+                self.depth_cap = int(math.ceil(iteration/self.depth_scale))
+                print("depth limited for next execution at {}".format(self.depth_cap))
+        else:
+            if "dynamic_depth_limit" in self.novelties: self.depth_cap = self.depth_simulations
+            print("- The goal has not been found") 
+            
         print("\n- End execution, time: {} [s]".format( (time.time() -startTime) )) if verbose else 0
         print()
         
         if save_h: self.env.saveHeuristics()
-        return h_updated
+        
+        # if "dynamic_depth_limit" in self.novelties:
+        #     return h_updated or not(actual_state.state == self.goal)
+        # else:
+        return h_updated or not(actual_state.state == self.goal) # criterion for convergence, False -> convergence, True -> divergence
         
     def simulate(self, save_h = False, verbose = False):
         print("\n********************* Simulating LSTA* ***********************\n")
@@ -187,7 +223,7 @@ class NovelLRTAStarBarrierEnv():
         starting_time = time.time()
         n_simulations = self.simulate()
         print("\n********************* Executing LSTA* ************************\n")
-        self.forward(False,True)
+        self.forward(False,True,True)
         duration_execution = time.time()-starting_time
         print("\n-----------[Execution: time and simulation iterations]-----------\n")
         print("time = {} [s] | number of simulations = {}".format(duration_execution, n_simulations))
@@ -195,17 +231,20 @@ class NovelLRTAStarBarrierEnv():
        
 class NovelLRTAnPuzzle():       
     
-    def __init__(self, env, n_simulation = math.inf, depth_simulations = 1000):
+    def __init__(self, env, n_simulation = math.inf, depth_simulations = 1000, novelties = []):
         print("\n********************** Starting LSTA* ************************\n")
         self.start = env.getStartingNode()
         if (self.start.get_n() == 9): self.goal = [[1,2,3],[4,5,6],[7,8,None]]
         else: self.goal = None 
         
+        self.novelties = novelties
         self.env = env
         self.plan = [] # a list of edges
         # self.h_updated = False
         self.n_simulation = n_simulation
         self.depth_simulations = depth_simulations
+        self.depth_cap = self.depth_simulations
+        if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
         
     def _minFs(self, state):
         f_min = math.inf
@@ -256,6 +295,8 @@ class NovelLRTAnPuzzle():
 
     def forward(self, save_h = False, verbose = True, final_execution=False):
         
+        if final_execution: self.depth_cap = self.depth_simulations
+        
         h_updated = False # initialize the flag for updates to false
         updates = {}
         goal_found = False
@@ -267,8 +308,22 @@ class NovelLRTAnPuzzle():
         actual_state = self.start
         self.plan.append(actual_state)
         
+        if "gaussian_restart" in self.novelties: rnd_u = round(random.random(),5)
         # while not (actual_state.state == self.goal):
-        while (iteration < self.depth_simulations) and (not (actual_state.state == self.goal)):   
+        while (iteration < self.depth_cap) and (not (actual_state.state == self.goal)):
+            
+            
+            if "gaussian_restart" in self.novelties and not(final_execution):
+                
+                # prob = round(scipy.stats.norm((self.depth_cap/(100)),1).pdf(iteration/100),5) 
+                prob = round(scipy.stats.norm( ((self.depth_simulations/2)/100)  ,1).pdf(iteration/100),5) 
+                rnd_n = round(random.random(),5)
+                # print("g_prob {}, rnd_n {}".format(prob,rnd_n))
+                if rnd_n <= prob:
+                    print("exiting for gaussian restart")
+                    print(" g_prob {}, rnd_n {}".format(prob,rnd_n))
+                    break
+                
             print("\n-----------[Iteration n°{}]-----------\n".format(iteration +1)) if verbose else 0
                 
             print("- State: \n") if verbose else 0
@@ -309,7 +364,7 @@ class NovelLRTAnPuzzle():
             next_node = None
             lowest_cost_f = math.inf # initialize the smallest cost with infinite
             
-            next_possible_states = []
+            if "f(n)_disambiguity" in self.novelties: next_possible_states = []
     
             for idx,node in enumerate(actual_state.getAdjacentNodes()):
                 c_i = 1 # unitary cost for each move
@@ -318,28 +373,32 @@ class NovelLRTAnPuzzle():
                 print("--> State n°{} with h(s) = {} & f(s) = {}". format(idx, h_i,f_i))if verbose else 0
                 print(node.getName())if verbose else 0
                 
-                # if(f_i < lowest_cost_f):
-                #     lowest_cost_f = f_i
-                #     next_node = node
+
                 
-                if(f_i < lowest_cost_f):
-                    lowest_cost_f = f_i
-                    next_possible_states = [node]
-                elif(f_i == lowest_cost_f):
-                    next_possible_states.append(node)
-                 
-            if not len(next_possible_states) == 1: # more choices 
-                next_node = self._oneStepCheck(next_possible_states)
-            else: 
-                next_node = next_possible_states[0]
-                
-            # unreversable dead end check (that's not the case obv)
-            if len(next_possible_states)==0:    
-                print("found a dead end")
-                actual_state.heuristic = math.inf 
-                self.env.memorize_heuristics(actual_state,math.inf)
-                if not(h_updated): h_updated = True
-                continue 
+                if "f(n)_disambiguity" in self.novelties: 
+                    if(f_i < lowest_cost_f):
+                        lowest_cost_f = f_i
+                        next_possible_states = [node]
+                    elif(f_i == lowest_cost_f):
+                        next_possible_states.append(node)
+                else:
+                    if(f_i < lowest_cost_f):
+                       lowest_cost_f = f_i
+                       next_node = node
+            
+            if "f(n)_disambiguity" in self.novelties: 
+                if not len(next_possible_states) == 1: # more choices 
+                    next_node = self._oneStepCheck(next_possible_states)
+                else: 
+                    next_node = next_possible_states[0]
+                    
+                # unreversable dead end check (that's not the case obv)
+                if len(next_possible_states)==0:    
+                    print("found a dead end")
+                    actual_state.heuristic = math.inf 
+                    self.env.memorize_heuristics(actual_state,math.inf)
+                    if not(h_updated): h_updated = True
+                    continue 
             
             
             print("- All states checked")if verbose else 0
@@ -388,13 +447,18 @@ class NovelLRTAnPuzzle():
                     print("\n- Plan:") 
                     for node in self.plan:
                         print(node.getName())
+                        
+            if "dynamic_depth_limit" in self.novelties:
+                self.depth_cap = int(math.ceil(iteration/self.depth_scale))
+                print("depth limited for next execution at {}".format(self.depth_cap))
         else:
+            if "dynamic_depth_limit" in self.novelties: self.depth_cap = self.depth_simulations
             print("- The goal has not been found in {} iterations". format(iteration))
                 
         print()if verbose else 0
         
         if save_h: self.env.saveHeuristics()
-        return h_updated
+        return h_updated or not(goal_found)
         
     def simulate(self, n_simulation = math.inf ,save_h = False, verbose = False): # todo
     
@@ -434,14 +498,17 @@ class NovelLRTAnPuzzle():
 
 class NovelLRTAEscape():
     
-    def __init__(self, env, n_simulation = math.inf, depth_simulations = 1000):
+    def __init__(self, env, n_simulation = math.inf, depth_simulations = 100, novelties = []):
         print("\n********************** Starting LSTA* ************************\n")
         self.start = deepcopy(env.getState()) #this represent the initial state for the algorithm
         self.env = env
         self.plan = [] # a list of edges
+        self.novelties = novelties
         # self.h_updated = False
         self.n_simulation = n_simulation
         self.depth_simulations = depth_simulations
+        self.depth_cap = self.depth_simulations
+        if "dynamic_depth_limit" in novelties:  self.depth_scale = 1
     
     def _minFs(self, state):
         f_min = math.inf
@@ -494,7 +561,9 @@ class NovelLRTAEscape():
         
 
     
-    def forward(self, save_h = False, verbose = True):
+    def forward(self, save_h = False, verbose = True, final_execution= False):
+        
+        if final_execution: self.depth_cap = self.depth_simulations
         h_updated = False # initialize the flag for updates to false
         iteration = 0 
         startTime = time.time()
@@ -504,10 +573,21 @@ class NovelLRTAEscape():
         total_cost_acc = 0
         actual_state = deepcopy(self.start)  # state object not a node
         
-        while not (self._isGoal(actual_state)):
+        while (iteration < self.depth_cap) and not (self._isGoal(actual_state)):
         # for i in range(20):
             
             actual_node = actual_state.getNode()
+            
+            if "gaussian_restart" in self.novelties and not(final_execution):
+                
+                # prob = 0.1
+                prob = round(scipy.stats.norm( ((self.depth_simulations/2)/10)  ,2).pdf(iteration/10),5) 
+                rnd_n = round(random.random(),5)
+
+                if rnd_n <= prob:
+                    print("exiting for gaussian restart")
+                    print(" g_prob {}, rnd_n {}".format(prob,rnd_n))
+                    break
             
             print("\n-----------[Iteration n°{}]-----------\n".format(iteration +1)) if verbose else 0
             # evaluate next state
@@ -518,7 +598,7 @@ class NovelLRTAEscape():
             lowest_cost_f = math.inf # initialize the smallest cost with infinite
             lowest_cost_c = math.inf
             
-            next_possible_states = []
+            if "f(n)_disambiguity" in self.novelties: next_possible_states = []
             for edge in actual_node.edges:
                 other_node = edge.getNode_b()
                 
@@ -540,36 +620,42 @@ class NovelLRTAEscape():
                 f_i = c_i + h_i # estimated cost
                 print("- Evaluating motion to {}, estimated cost f= c(s,s') + h(s') = {} + {} = {}".format(other_node.name, c_i,h_i,f_i)) if verbose else 0
                 
-                if(f_i < lowest_cost_f):
-                    lowest_cost_f = f_i
-                    lowest_cost_c = c_i
-                    # next_node = other_node
-                    # chosen_edge = edge
-                    next_possible_states = [other_state]
-                elif(f_i == lowest_cost_f):
-                   next_possible_states.append(other_state)
-            
-            # what choose?
-            if not len(next_possible_states) == 1: # more choices 
-                next_node = self._oneStepCheck(next_possible_states)
-            else: 
-                next_node = next_possible_states[0].getNode()
-
-            # unreversable dead end check (not the case)
-            if len(next_possible_states)==0:    
-                print("found a dead end")
-                self.env.memorize_heuristics(actual_state,math.inf)
-                if not(h_updated): h_updated = True
-                continue
-            
-            # get info for the plan and final cost
-            for edge in actual_node.edges:
-                other_node = edge.getNode_b()
-                if other_node is next_node:
-                    chosen_edge =  edge
-                    break
-           
-            lowest_cost_c = chosen_edge.cost
+                if "f(n)_disambiguity" in self.novelties:
+                    if(f_i < lowest_cost_f):
+                        lowest_cost_f = f_i
+                        lowest_cost_c = c_i
+                        next_possible_states = [other_state]
+                    elif(f_i == lowest_cost_f):
+                       next_possible_states.append(other_state)
+                else:
+                    if(f_i < lowest_cost_f):
+                       lowest_cost_f = f_i
+                       lowest_cost_c = c_i
+                       next_node = other_node
+                       chosen_edge = edge
+                    
+            if "f(n)_disambiguity" in self.novelties:
+                # what choose?
+                if not len(next_possible_states) == 1: # more choices 
+                    next_node = self._oneStepCheck(next_possible_states)
+                else: 
+                    next_node = next_possible_states[0].getNode()
+    
+                # unreversable dead end check (not the case)
+                if len(next_possible_states)==0:    
+                    print("found a dead end")
+                    self.env.memorize_heuristics(actual_state,math.inf)
+                    if not(h_updated): h_updated = True
+                    continue
+                
+                # get info for the plan and final cost
+                for edge in actual_node.edges:
+                    other_node = edge.getNode_b()
+                    if other_node is next_node:
+                        chosen_edge =  edge
+                        break
+               
+                lowest_cost_c = chosen_edge.cost
             
             
                 
@@ -622,18 +708,31 @@ class NovelLRTAEscape():
             print("- The heuristic has been updated")
         else:
             print("- The heuristic has been updated")
-        print("- The goal has been found in the state {}". format(actual_state.getNode().name)) 
-        print("- Definitive cost for the plan {}".format(total_cost_acc)) 
-        print("- Plan found with {} moves". format(len(self.plan)))
-        print("\n- Plan:")  if verbose else 0
-        if verbose:
-            for action in self.plan:
-                print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+            
+     
+        if self._isGoal(actual_state):
+            print("- The goal has been found in the state {}". format(actual_state.getNode().name)) 
+            print("- Definitive cost for the plan {}".format(total_cost_acc)) 
+            print("- Plan found with {} moves". format(len(self.plan)))
+            print("\n- Plan:")  if verbose else 0
+            if verbose:
+                for action in self.plan:
+                    print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+                    
+            if "dynamic_depth_limit" in self.novelties:
+                self.depth_cap = int(math.ceil(iteration/self.depth_scale))
+                print("depth limited for next execution at {}".format(self.depth_cap))
+                    
+        else:
+            print("- Plan not found with {} moves". format(len(self.plan)))
+            if "dynamic_depth_limit" in self.novelties: self.depth_cap = self.depth_simulations
+        
         print("\n- End forward, time: {} [s]".format( (time.time() -startTime) )) if verbose else 0
         print()
         
         if save_h: self.env.saveHeuristics()
-        return h_updated
+
+        return h_updated or not(self._isGoal(actual_state))
         
     def simulate(self):
         print("\n********************* Simulating LSTA* ***********************\n")
@@ -652,7 +751,7 @@ class NovelLRTAEscape():
         starting_time = time.time()
         n_simulations= self.simulate()
         print("\n********************* Executing LSTA* ************************\n")
-        self.forward(False,True)
+        self.forward(False,True,True)
         duration_execution = time.time()-starting_time
         print("\n-----------[Execution: time and simulation iterations]-----------\n")
         print("time = {} [s] | number of simulations = {}".format(duration_execution, n_simulations))

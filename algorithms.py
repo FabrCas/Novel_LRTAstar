@@ -9,7 +9,7 @@ from copy import deepcopy, copy
 
 class LRTAStarBarrierEnv():
     
-    def __init__(self, env, state_goal = 0, n_simulation = math.inf):
+    def __init__(self, env, state_goal = 0, n_simulation = math.inf, depth_simulations = 8):
         print("\n********************** Starting LSTA* ************************\n")
         self.start = [node for node in env.getNodes() if node.name==env.getInitialState()][0] #this represent the initial state for the algorithm
         self.goal = state_goal
@@ -17,11 +17,12 @@ class LRTAStarBarrierEnv():
         self.plan = [] # a list of edges
         # self.h_updated = False
         self.n_simulation = n_simulation
+        self.depth_simulations = depth_simulations
     
     # implement simulation and exectution separetely
 
     
-    def forward(self, save_h = False, verbose = True):
+    def forward(self, save_h = False, verbose = True, final_execution= False):
         h_updated = False # initialize the flag for updates to false
         iteration = 0 
         startTime = time.time()
@@ -31,7 +32,7 @@ class LRTAStarBarrierEnv():
         total_cost_acc = 0
         actual_state = self.start
         
-        while not (actual_state.state == self.goal):
+        while (iteration < self.depth_simulations) and not (actual_state.state == self.goal):
             print("\n-----------[Iteration n°{}]-----------\n".format(iteration +1)) if verbose else 0
             # evaluate next state
             print("- Looking edges of state {}".format(actual_state.name)) if verbose else 0
@@ -75,16 +76,21 @@ class LRTAStarBarrierEnv():
             print("- Actual cost for the plan {}".format(total_cost_acc)) if verbose else 0
         
         print("\n-----------[Final recap]-----------\n") if verbose else 0
-        print("- The goal has been found in the state {}". format(actual_state.name)) 
-        print("- Definitive cost for the plan {}".format(total_cost_acc)) 
-        print("\n- Plan:") 
-        for action in self.plan:
-            print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+        if actual_state.state == self.goal:
+            print("- The goal has been found in the state {}". format(actual_state.name)) 
+            print("- Definitive cost for the plan {}".format(total_cost_acc)) 
+            print("\n- Plan:") 
+            for action in self.plan:
+                print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+        else:
+            print("- The goal has not been found") 
+            
         print("\n- End execution, time: {} [s]".format( (time.time() -startTime) )) if verbose else 0
         print()
         
         if save_h: self.env.saveHeuristics()
-        return h_updated
+        
+        return h_updated or not(actual_state.state == self.goal)
         
     def simulate(self,save_h = False, verbose = False):
         print("\n********************* Simulating LSTA* ***********************\n")
@@ -102,7 +108,7 @@ class LRTAStarBarrierEnv():
         starting_time = time.time()
         n_simulations = self.simulate()
         print("\n********************* Executing LSTA* ************************\n")
-        self.forward(False,True)
+        self.forward(False,True,True)
         duration_execution = time.time()-starting_time
         print("\n-----------[Execution: time and simulation iterations]-----------\n")
         print("time = {} [s] | number of simulations = {}".format(duration_execution, n_simulations))
@@ -243,7 +249,7 @@ class LRTAnPuzzle():
         print()if verbose else 0
         
         if save_h: self.env.saveHeuristics()
-        return h_updated
+        return h_updated or not(goal_found)
         
     def simulate(self, n_simulation = math.inf ,save_h = False, verbose = False): # todo
     
@@ -306,7 +312,7 @@ class LRTAEscape():
         
 
     
-    def forward(self, save_h = False, verbose = True):
+    def forward(self, save_h = False, verbose = True, final_execution= False):
         h_updated = False # initialize the flag for updates to false
         iteration = 0 
         startTime = time.time()
@@ -316,7 +322,7 @@ class LRTAEscape():
         total_cost_acc = 0
         actual_state = deepcopy(self.start)  # state object not a node
         
-        while not (self._isGoal(actual_state)):
+        while (self.depth_simulations > iteration) and not (self._isGoal(actual_state)):
         # for i in range(20):
             
             actual_node = actual_state.getNode()
@@ -403,22 +409,30 @@ class LRTAEscape():
             print("- Actual cost for the plan {}".format(total_cost_acc)) if verbose else 0
         
         print("\n-----------[Final recap forward]-----------\n") if verbose else 0
+        
         if h_updated:
             print("- The heuristic has been updated")
         else:
             print("- The heuristic has been updated")
-        print("- The goal has been found in the state {}". format(actual_state.getNode().name)) 
-        print("- Definitive cost for the plan {}".format(total_cost_acc)) 
-        print("- Plan found with {} moves". format(len(self.plan)))
-        print("\n- Plan:")  if verbose else 0
-        if verbose:
-            for action in self.plan:
-                print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+            
+         
+        if self._isGoal(actual_state):
+            print("- The goal has been found in the state {}". format(actual_state.getNode().name)) 
+            print("- Definitive cost for the plan {}".format(total_cost_acc)) 
+            print("- Plan found with {} moves". format(len(self.plan)))
+            print("\n- Plan:")  if verbose else 0
+            if verbose:
+                for action in self.plan:
+                    print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
+                    
+        else: print("- Plan not found with {} moves". format(len(self.plan)))
+        
         print("\n- End forward, time: {} [s]".format( (time.time() -startTime) )) if verbose else 0
         print()
         
         if save_h: self.env.saveHeuristics()
-        return h_updated
+          
+        return h_updated or not(self._isGoal(actual_state))
         
     def simulate(self,save_h = False, verbose = False):
         print("\n********************* Simulating LSTA* ***********************\n")
@@ -437,7 +451,7 @@ class LRTAEscape():
         starting_time = time.time()
         n_simulations= self.simulate()
         print("\n********************* Executing LSTA* ************************\n")
-        self.forward(False,True)
+        self.forward(False,True,True)
         duration_execution = time.time()-starting_time
         print("\n-----------[Execution: time and simulation iterations]-----------\n")
         print("time = {} [s] | number of simulations = {}".format(duration_execution, n_simulations))
