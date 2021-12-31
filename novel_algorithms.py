@@ -12,9 +12,11 @@ import random
 random.seed(22)
 
 """ novelties: 
-- disambiguity on f(n) method -> novel_1
+- disambiguity on f(n) method 
 - set h(n) to inf for unreversable dead ends
-- 
+- dynamic limit of the depth for the search
+- restarting based on Gaussian probability density
+- restarting based on % increment of h(s)
 """
 
 def _getMagnitudeNUmber(n):
@@ -89,7 +91,6 @@ class NovelLRTAStarBarrierEnv():
     
 
         
-    
     def forward(self, save_h = False, verbose = True, final_execution= False):
         
         if final_execution: self.depth_cap = self.depth_simulations
@@ -212,7 +213,7 @@ class NovelLRTAStarBarrierEnv():
             print("\n- Plan:") 
             for action in self.plan:
                 print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
-            if "dynamic_depth_limit" in self.novelties:
+            if "dynamic_depth_limit" in self.novelties and not(final_execution):
                 self.depth_cap = int(math.ceil(iteration/self.depth_scale))
                 print("depth limited for next execution at {}".format(self.depth_cap))
         else:
@@ -345,7 +346,7 @@ class NovelLRTAnPuzzle():
                 # print("g_prob {}, rnd_n {}".format(prob,rnd_n))
                 if rnd_n <= prob:
                     print("exiting for gaussian restart")
-                    print(" g_prob {}, rnd_n {}".format(prob,rnd_n))
+                    # print(" g_prob {}, rnd_n {}".format(prob,rnd_n))
                     break
                 
             print("\n-----------[Iteration n°{}]-----------\n".format(iteration +1)) if verbose else 0
@@ -480,7 +481,7 @@ class NovelLRTAnPuzzle():
                     for node in self.plan:
                         print(node.getName())
                         
-            if "dynamic_depth_limit" in self.novelties:
+            if "dynamic_depth_limit" in self.novelties and not(final_execution):
                 self.depth_cap = int(math.ceil(iteration/self.depth_scale))
                 print("depth limited for next execution at {}".format(self.depth_cap))
         else:
@@ -620,7 +621,7 @@ class NovelLRTAEscape():
 
                 if rnd_n <= prob:
                     print("exiting for gaussian restart")
-                    print(" g_prob {}, rnd_n {}".format(prob,rnd_n))
+                    # print(" g_prob {}, rnd_n {}".format(prob,rnd_n))
                     break
             
             print("\n-----------[Iteration n°{}]-----------\n".format(iteration +1)) if verbose else 0
@@ -707,7 +708,7 @@ class NovelLRTAEscape():
                 if "increment_restart" in self.novelties:
                     delta = lowest_cost_f - actual_h  
                     delta_percentage = round((delta/actual_h)*100,4)
-                    if delta_percentage>= 200:
+                    if delta_percentage>= 75:
                         print("found an update with {}% increase, restarting...".format(delta_percentage))
                         break
             else:
@@ -760,7 +761,7 @@ class NovelLRTAEscape():
                 for action in self.plan:
                     print("--> move from {} to {}".format(action.getNode_a().name, action.getNode_b().name))
                     
-            if "dynamic_depth_limit" in self.novelties:
+            if "dynamic_depth_limit" in self.novelties and not(final_execution):
                 self.depth_cap = int(math.ceil(iteration/self.depth_scale))
                 print("depth limited for next execution at {}".format(self.depth_cap))
                     

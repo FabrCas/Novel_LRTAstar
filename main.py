@@ -10,13 +10,13 @@ NOVELTIES = ["f(n)_disambiguity", "dynamic_depth_limit","gaussian_restart","incr
 if __name__ == "__main__":
     
     # choose the problem
-    problem = PROBLEMS[2]
+    problem = PROBLEMS[3]
     # choose whether use classical or a new approach
     type_algorithm = TYPE_ALGORITHMS[1]
     
     # choose the new features to use
     if type_algorithm =="novel":
-        novelties_selected = [NOVELTIES[3]]
+        novelties_selected = [NOVELTIES[1]]
     else:
         novelties_selected = []
     
