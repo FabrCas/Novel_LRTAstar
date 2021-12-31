@@ -202,12 +202,10 @@ class LRTAnPuzzle():
             print("- Evaluating the updating of the heuristics... ")if verbose else 0
             if(lowest_cost_f > actual_state.heuristic):
                 print("- Updating heuristic from {} to {}, for the actual state".format(actual_state.heuristic,lowest_cost_f))if verbose else 0
-    
                 updates[str(actual_state.state)] = "from: " + str(actual_state.heuristic) + " to: " + str(lowest_cost_f)
                 actual_state.heuristic = lowest_cost_f
                 self.env.memorize_heuristics(actual_state,lowest_cost_f)
                 if not(h_updated): h_updated = True
-                
                 
             else:
                 print("- No update")if verbose else 0

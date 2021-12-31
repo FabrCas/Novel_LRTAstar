@@ -5,7 +5,7 @@ from novel_algorithms import getNovelLRTA
 # exe options
 PROBLEMS = ["BarrierEnv1","BarrierEnv2","Escape","8_puzzle"]
 TYPE_ALGORITHMS =["classical","novel"]
-NOVELTIES = ["f(n)_disambiguity", "dynamic_depth_limit","gaussian_restart"]
+NOVELTIES = ["f(n)_disambiguity", "dynamic_depth_limit","gaussian_restart","increment_restart"]
 
 if __name__ == "__main__":
     
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     
     # choose the new features to use
     if type_algorithm =="novel":
-        novelties_selected = [NOVELTIES[2]]
+        novelties_selected = [NOVELTIES[3]]
     else:
         novelties_selected = []
     
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     
     """ execute(simluation + optimal execution) or just run the algorithm with forward """
     # lrta_star.forward(save_h = False , verbose = True)
-    # lrta_star.simulate(save_h = False , verbose = True)
+    # lrta_star.simulate(save_h = False , verbose = False)
     
     
     """ simulation + final forward """
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     # time = 45.00187587738037 [s] | number of simulations = 110
     
     
-    # time = 0.028105974197387695 [s] | number of simulations = 20
+    # time = 0.0402374267578125 [s] | number of simulations = 22

@@ -17,6 +17,16 @@ random.seed(22)
 - 
 """
 
+def _getMagnitudeNUmber(n):
+    
+    def recursive_step(n,order):
+        if n >= 0 and n<= 9:
+            return order
+        else:
+            return recursive_step(n/10, order+1)
+        
+    n = abs(n)
+    return recursive_step(n,0)
 
     
 class NovelLRTAStarBarrierEnv():
@@ -41,7 +51,6 @@ class NovelLRTAStarBarrierEnv():
     - the only next state of a possible next state is the current state? avoid it is a dead end (reversable in this case, but still a useless move)
     - at parity of f(s), make a step forward to look at the minimum f(s), the choice is prefer the one with has a min one ahead f(s)
     """
-    
     
     def _minFs(self, state):
         f_min = math.inf
@@ -77,6 +86,8 @@ class NovelLRTAStarBarrierEnv():
                 cost = self._minFs(nextState)
                 chosen_state = nextState
         return chosen_state
+    
+
         
     
     def forward(self, save_h = False, verbose = True, final_execution= False):
@@ -96,7 +107,9 @@ class NovelLRTAStarBarrierEnv():
         while (iteration < self.depth_cap) and not (actual_state.state == self.goal):
         
             if "gaussian_restart" in self.novelties and not(final_execution):
-                prob = round(scipy.stats.norm(self.depth_cap/2,1).pdf(iteration),5) 
+                scale = 10**_getMagnitudeNUmber(self.depth_simulations)
+                mean = int( ((self.depth_simulations/2)/scale) )
+                prob = round(scipy.stats.norm(mean,1).pdf(iteration/scale),5) 
                 rnd_n = round(random.random(),5)
                 # print("g_prob {}, rnd_n {}".format(prob,rnd_n))
                 if rnd_n <= prob:
@@ -167,9 +180,18 @@ class NovelLRTAStarBarrierEnv():
             print("- Evaluating the updating of the heuristics... ")if verbose else 0
             if(lowest_cost_f > actual_state.heuristic):
                 print("- Updating heuristic of {}, from {} to {}".format(actual_state.name,actual_state.heuristic,lowest_cost_f))if verbose else 0
+                
+                old_h = actual_state.heuristic
                 actual_state.heuristic = lowest_cost_f
                 self.env.memorize_heuristics(actual_state,lowest_cost_f)
                 if not(h_updated): h_updated = True
+                
+                if "increment_restart" in self.novelties:
+                    delta = lowest_cost_f - old_h  
+                    delta_percentage = round((delta/old_h)*100,4)
+                    if delta_percentage>= 75:
+                        print("found an update with {}% increase, restarting...".format(delta_percentage))
+                        break
             else:
                 print("- No update")if verbose else 0
                     
@@ -315,8 +337,10 @@ class NovelLRTAnPuzzle():
             
             if "gaussian_restart" in self.novelties and not(final_execution):
                 
-                # prob = round(scipy.stats.norm((self.depth_cap/(100)),1).pdf(iteration/100),5) 
-                prob = round(scipy.stats.norm( ((self.depth_simulations/2)/100)  ,1).pdf(iteration/100),5) 
+                # prob = round(scipy.stats.norm((self.depth_cap/(100)),1).pdf(iteration/100),5)
+                scale = 10**(_getMagnitudeNUmber(self.depth_simulations)-1)
+                mean = int( (self.depth_simulations/2)/scale ) 
+                prob = round(scipy.stats.norm(mean,1).pdf(iteration/scale),5) 
                 rnd_n = round(random.random(),5)
                 # print("g_prob {}, rnd_n {}".format(prob,rnd_n))
                 if rnd_n <= prob:
@@ -407,11 +431,19 @@ class NovelLRTAnPuzzle():
             print("- Evaluating the updating of the heuristics... ")if verbose else 0
             if(lowest_cost_f > actual_state.heuristic):
                 print("- Updating heuristic from {} to {}, for the actual state".format(actual_state.heuristic,lowest_cost_f))if verbose else 0
-    
+                
+                old_h = actual_state.heuristic
                 updates[str(actual_state.state)] = "from: " + str(actual_state.heuristic) + " to: " + str(lowest_cost_f)
                 actual_state.heuristic = lowest_cost_f
                 self.env.memorize_heuristics(actual_state,lowest_cost_f)
                 if not(h_updated): h_updated = True
+                
+                if "increment_restart" in self.novelties:
+                    delta = lowest_cost_f - old_h  
+                    delta_percentage = round((delta/old_h)*100,4)
+                    if delta_percentage>= 75:
+                        print("found an update with {}% increase, restarting...".format(delta_percentage))
+                        break
                 
                 
             else:
@@ -581,7 +613,9 @@ class NovelLRTAEscape():
             if "gaussian_restart" in self.novelties and not(final_execution):
                 
                 # prob = 0.1
-                prob = round(scipy.stats.norm( ((self.depth_simulations/2)/10)  ,2).pdf(iteration/10),5) 
+                scale = 10**(_getMagnitudeNUmber(self.depth_simulations)-1)
+                mean = int( (self.depth_simulations/2)/scale ) 
+                prob = round(scipy.stats.norm(mean,1).pdf(iteration/scale),5) 
                 rnd_n = round(random.random(),5)
 
                 if rnd_n <= prob:
@@ -669,6 +703,13 @@ class NovelLRTAEscape():
                 # actual_state.heuristic = lowest_cost_f
                 self.env.memorize_heuristics(actual_state,lowest_cost_f)
                 if not(h_updated): h_updated = True
+                
+                if "increment_restart" in self.novelties:
+                    delta = lowest_cost_f - actual_h  
+                    delta_percentage = round((delta/actual_h)*100,4)
+                    if delta_percentage>= 200:
+                        print("found an update with {}% increase, restarting...".format(delta_percentage))
+                        break
             else:
                 print("- No update")if verbose else 0
             
