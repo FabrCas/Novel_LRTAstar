@@ -15,7 +15,7 @@ random.seed(22)
 - disambiguity on f(n) method 
 - set h(n) to inf for unreversable dead ends
 - dynamic limit of the depth for the search
-- restarting based on Gaussian probability density
+- restarting based on Gaussian probability distribution
 - restarting based on % increment of h(s)
 """
 
@@ -71,7 +71,6 @@ class NovelLRTAStarBarrierEnv():
     def _oneStepCheck(self, actualState, nextStates):
         cost = math.inf
         chosen_state = None
-        # [print(state.name) for state in nextStates]
         for nextState in nextStates:
             #  choice based in c(s,s')
             # for edge in actualState.edges:
@@ -331,7 +330,6 @@ class NovelLRTAnPuzzle():
         actual_state = self.start
         self.plan.append(actual_state)
         
-        if "gaussian_restart" in self.novelties: rnd_u = round(random.random(),5)
         # while not (actual_state.state == self.goal):
         while (iteration < self.depth_cap) and (not (actual_state.state == self.goal)):
             
@@ -516,7 +514,6 @@ class NovelLRTAnPuzzle():
                 if convergence:
                     break
                 
-                # time.sleep(1)
         return n_simulations
         
     def execution(self):
@@ -541,7 +538,7 @@ class NovelLRTAEscape():
         self.n_simulation = n_simulation
         self.depth_simulations = depth_simulations
         self.depth_cap = self.depth_simulations
-        if "dynamic_depth_limit" in novelties:  self.depth_scale = 1
+        if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
     
     def _minFs(self, state):
         f_min = math.inf
@@ -776,16 +773,16 @@ class NovelLRTAEscape():
 
         return h_updated or not(self._isGoal(actual_state))
         
-    def simulate(self):
+    def simulate(self, save_h = False, verbose = False):
         print("\n********************* Simulating LSTA* ***********************\n")
         n_simulations = 1
         if self.n_simulation == math.inf:
             print("\n-----------[Simulation n°1]-----------\n")
-            convergence = not(self.forward(True,False))
+            convergence = not(self.forward(save_h,verbose))
             while(not(convergence)):
                 n_simulations += 1 
                 print("\n-----------[Simulation n°{}]-----------\n".format(n_simulations))
-                convergence = not(self.forward(True,False))
+                convergence = not(self.forward(save_h,verbose))
                 
         return n_simulations
         

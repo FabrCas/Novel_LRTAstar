@@ -85,7 +85,7 @@ class NodeNpuzzle():
         
     """
     the class has been modelled to have no information about the edges, 'cause possible states
-    are estimted in run-time and the cost of the action to move the tile is unitary (c(s,s') = 1)
+    are estimeted in run-time and the cost of the action to move the tile is unitary (c(s,s') = 1)
     for all the possible directions 
     """
     
@@ -160,7 +160,6 @@ class NodeEscape():
     
     def getName(self):
         return self.name
-
     
     def getTypeNode(self):
         return self.typeNode
@@ -187,7 +186,7 @@ class NodeEscape():
 class StateEscape():
     def __init__(self, initialState, hasRedKey = False, hasBlueKey = False):
         if type(initialState) == NodeEscape: self.position = initialState
-        else: print(printWrong("you can only initilize with NodeEscape object the inital position!"))
+        else: print(printWrong("you can only initilize with NodeEscape object the initial position!"))
         self.hasRedKey = hasRedKey
         self.hasBlueKey = hasBlueKey
     
@@ -208,7 +207,7 @@ class StateEscape():
     
     def changePosition(self,state):
         if type(state) == NodeEscape: self.position = state
-        else: print(printWrong("you can only initilize with NodeEscape object the inital position!"))
+        else: print(printWrong("you can only initilize with NodeEscape object the initial position!"))
         
     
     

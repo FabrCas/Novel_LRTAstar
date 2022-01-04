@@ -10,13 +10,13 @@ NOVELTIES = ["f(n)_disambiguity", "dynamic_depth_limit","gaussian_restart","incr
 if __name__ == "__main__":
     
     # choose the problem
-    problem = PROBLEMS[3]
+    problem = PROBLEMS[0]
     # choose whether use classical or a new approach
-    type_algorithm = TYPE_ALGORITHMS[1]
-    
+    type_algorithm = TYPE_ALGORITHMS[0]
+
     # choose the new features to use
     if type_algorithm =="novel":
-        novelties_selected = [NOVELTIES[1]]
+        novelties_selected = [NOVELTIES[1],NOVELTIES[2],NOVELTIES[3]]
     else:
         novelties_selected = []
     
@@ -38,10 +38,3 @@ if __name__ == "__main__":
     """ simulation + final forward """
     lrta_star.execution() 
     
-    
-    # time = 32.210394620895386 [s] | number of simulations = 112
-    # f(n) dis, 8 puzzle easy2
-    # time = 45.00187587738037 [s] | number of simulations = 110
-    
-    
-    # time = 0.0402374267578125 [s] | number of simulations = 22

@@ -121,7 +121,7 @@ class SimpleTestEnv(problem):
         self.nodes = nodes
     
 
-# environments to test the correctness of the algoriht 
+# environments to test the correctness of the algorithm 
 
 # optimality case
 class BarrierEnv1(SimpleTestEnv):
@@ -158,7 +158,7 @@ class Puzzle8(problem):
         self.starting_node = None
         
         # select here other configutions
-        self.selectEasyState2()
+        self.selectEasyState()
         if load_h: self.loadHeuristics()
         self._isSolvable(initial_state)
         
@@ -208,7 +208,6 @@ class Puzzle8(problem):
             node.heuristic = self.learned_heuristics[str(node.state)]
             
     def memorize_heuristics(self,node,value):
-        # print(node.state)
         self.learned_heuristics[str(node.state)] = value
 
     # goal ->  [[1,2,3],[4,5,6],[7,8,None]]
@@ -216,7 +215,7 @@ class Puzzle8(problem):
         state = node.state
         relaxed_h = 8 - ((state[0][0]==1) + (state[0][1]==2) + (state[0][2]==3) + \
         (state[1][0]==4) + (state[1][1]==5) + (state[1][2]==6) + \
-        (state[2][0]==7) + (state[2][1]==8) + (state[2][2]=="x"))
+        (state[2][0]==7) + (state[2][1]==8))
         return relaxed_h
        
     def create_env(self): 
@@ -228,8 +227,10 @@ class Puzzle8(problem):
         return self.starting_node
     
 # *****************************************************************************
-# cost edges -> ceil of the euclidean distance in the cartesian plane * 3 (diagonal) or * 2 (horizontal and vertical)
 
+"""
+third kind of problem: Escape
+"""
 class Escape(problem):
     def __init__(self, initial_state = (4,5), load_h = False):
         print("\n**************** initializing the problem ********************\n") 
@@ -252,11 +253,6 @@ class Escape(problem):
         pos = (state_info[0],state_info[1])
         has_rk = state_info[2]
         has_bk = state_info[3]
-        # print(self.blue_door_pos)
-        # print(self.red_door_pos)
-        # print(self.blue_key_pos)
-        # print(self.red_key_pos)
-        # print(pos)
         
         # initialize the 2 distances
         red_distance = self._manhattanDistance(pos, self.red_key_pos) + self._manhattanDistance(self.red_key_pos, self.red_door_pos)
@@ -273,7 +269,7 @@ class Escape(problem):
         
         return min(red_distance,blue_distance)
     
-    # this time the heuristic is not pre-evaluated, but directly on the algorithm
+    # this time the heuristic is not pre-evaluated, but directly called in the algorithm
     # attention: heuristic from the state and not from the node (more info about key obtained)
     def compute_heuristics(self, state = None):
         if state == None: state = self.state
