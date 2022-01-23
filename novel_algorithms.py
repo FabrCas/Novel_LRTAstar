@@ -30,7 +30,7 @@ def _getMagnitudeNUmber(n):
     n = abs(n)
     return recursive_step(n,0)
 
-# disambiguity with tollerance, look appendix report
+# disambiguity with tolerance, look appendix report
 use_variant_disambiguity = True
 
 class NovelLRTAStarBarrierEnv():
@@ -49,7 +49,7 @@ class NovelLRTAStarBarrierEnv():
         if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
         
         if use_variant_disambiguity:
-            self.tollerance = 0.4 # value that goes from 0 to 1 and indicates the percentage of tollerence in the selection of states with minimal costs
+            self.tolerance = 0.4 # value that goes from 0 to 1 and indicates the percentage of tollerence in the selection of states with minimal costs
             self.states_fn = []
            
            
@@ -150,7 +150,7 @@ class NovelLRTAStarBarrierEnv():
                         elif(f_i == lowest_cost_f):
                             next_possible_states.append(other_node)
                     else:
-                        # 2 ways of acting, using len(next_possible_states) == 0 or at priori using a certain tollerance
+                        # 2 ways of acting, using len(next_possible_states) == 0 or at priori using a certain tolerance
                         self.states_fn.append({"state": other_node,"value_f":f_i})
                         if(f_i < lowest_cost_f):
                             lowest_cost_f = f_i
@@ -179,7 +179,7 @@ class NovelLRTAStarBarrierEnv():
                         # print("lowest_cost_f ->  {}".format( lowest_cost_f))
                         # print("val_rel ->  {}".format( val_rel))
                         
-                        if val_rel <= self.tollerance:
+                        if val_rel <= self.tolerance:
                             next_possible_states.append(state)
                             
                     print("number of possible states {}".format(len(next_possible_states)))if verbose else 0
@@ -303,7 +303,7 @@ class NovelLRTAnPuzzle():
         if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
         
         if use_variant_disambiguity:
-            self.tollerance = 0.1
+            self.tolerance = 0.1
             self.states_fn = []
         
     def _minFs(self, state):
@@ -472,7 +472,7 @@ class NovelLRTAnPuzzle():
                        # print("lowest_cost_f ->  {}".format( lowest_cost_f))
                        # print("val_rel ->  {}".format( val_rel)) if verbose else 0
                        
-                       if val_rel <= self.tollerance:
+                       if val_rel <= self.tolerance:
                            next_possible_states.append(state)
                         
                    print("number of possible states {}".format(len(next_possible_states)))if verbose else 0
@@ -608,7 +608,7 @@ class NovelLRTAEscape():
         if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
         
         if use_variant_disambiguity:
-            self.tollerance = 0.05
+            self.tolerance = 0.05
             self.states_fn = []
     
     def _minFs(self, state):
@@ -763,7 +763,7 @@ class NovelLRTAEscape():
                         # print("lowest_cost_f ->  {}".format( lowest_cost_f))
                         # print("val_rel ->  {}".format( val_rel)) 
                         
-                        if val_rel <= self.tollerance:
+                        if val_rel <= self.tolerance:
                             next_possible_states.append(state)
                             
                     print("number of possible states {}".format(len(next_possible_states))) if verbose else 0
