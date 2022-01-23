@@ -30,7 +30,9 @@ def _getMagnitudeNUmber(n):
     n = abs(n)
     return recursive_step(n,0)
 
-    
+# disambiguity with tollerance, look appendix report
+use_variant_disambiguity = True
+
 class NovelLRTAStarBarrierEnv():
     
     def __init__(self, env, state_goal = 0, n_simulation = math.inf, depth_simulations = 8 ,novelties = []):
@@ -45,6 +47,10 @@ class NovelLRTAStarBarrierEnv():
         self.novelties = novelties
         self.depth_cap = self.depth_simulations
         if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
+        
+        if use_variant_disambiguity:
+            self.tollerance = 0.4 # value that goes from 0 to 1 and indicates the percentage of tollerence in the selection of states with minimal costs
+            self.states_fn = []
            
            
     
@@ -125,20 +131,32 @@ class NovelLRTAStarBarrierEnv():
             lowest_cost_f = math.inf # initialize the smallest cost with infinite
             lowest_cost_c = math.inf
             if "f(n)_disambiguity" in self.novelties: next_possible_states = [] # more states can have same f(n) here is introduced a policy to choose 
+            if use_variant_disambiguity: self.states_fn = []  
             for edge in actual_state.edges:
                 other_node = edge.getNode_b()
+                
+                
                 
                 c_i = edge.cost
                 h_i = other_node.heuristic 
                 f_i = c_i + h_i # estimated cost
                 print("- Evaluating motion to {}, estimated cost f= c(s,s') + h(s') = {} + {} = {}".format(other_node.name, c_i,h_i,f_i)) if verbose else 0
                 
-                if "f(n)_disambiguity" in self.novelties: 
-                    if(f_i < lowest_cost_f):
-                        lowest_cost_f = f_i
-                        next_possible_states = [other_node]
-                    elif(f_i == lowest_cost_f):
-                        next_possible_states.append(other_node)
+                if "f(n)_disambiguity" in self.novelties:
+                    if not(use_variant_disambiguity):
+                        if(f_i < lowest_cost_f):
+                            lowest_cost_f = f_i
+                            next_possible_states = [other_node]
+                        elif(f_i == lowest_cost_f):
+                            next_possible_states.append(other_node)
+                    else:
+                        # 2 ways of acting, using len(next_possible_states) == 0 or at priori using a certain tollerance
+                        self.states_fn.append({"state": other_node,"value_f":f_i})
+                        if(f_i < lowest_cost_f):
+                            lowest_cost_f = f_i
+                            next_possible_states = [other_node]
+                        elif(f_i == lowest_cost_f):
+                            next_possible_states.append(other_node)
                 else:
                     if(f_i < lowest_cost_f):
                         lowest_cost_f = f_i
@@ -146,9 +164,25 @@ class NovelLRTAStarBarrierEnv():
                         next_node = other_node
                         chosen_edge = edge
                 
-                    
 
             if "f(n)_disambiguity" in self.novelties: 
+                if use_variant_disambiguity and len(next_possible_states) == 1:    #it's possible to have another variant removing the second conditions
+                    print("using variant on disambiguity ....\n") if verbose else 0
+                    # print("states_fn -> {}".format(len(self.states_fn)))
+                    next_possible_states = []
+                    
+                    for elem in self.states_fn:
+                        state = elem["state"]
+                        v = elem["value_f"]
+                        val_rel = (v/lowest_cost_f)-1  #how much bigger in percentage? 
+                        # print("v -> {}".format(v))
+                        # print("lowest_cost_f ->  {}".format( lowest_cost_f))
+                        # print("val_rel ->  {}".format( val_rel))
+                        
+                        if val_rel <= self.tollerance:
+                            next_possible_states.append(state)
+                            
+                    print("number of possible states {}".format(len(next_possible_states)))if verbose else 0
                 
                 # what choose?
                 if not len(next_possible_states) == 1: # more choices 
@@ -267,6 +301,10 @@ class NovelLRTAnPuzzle():
         self.depth_simulations = depth_simulations
         self.depth_cap = self.depth_simulations
         if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
+        
+        if use_variant_disambiguity:
+            self.tollerance = 0.1
+            self.states_fn = []
         
     def _minFs(self, state):
         f_min = math.inf
@@ -388,7 +426,8 @@ class NovelLRTAnPuzzle():
             lowest_cost_f = math.inf # initialize the smallest cost with infinite
             
             if "f(n)_disambiguity" in self.novelties: next_possible_states = []
-    
+            if use_variant_disambiguity: self.states_fn = [] 
+            
             for idx,node in enumerate(actual_state.getAdjacentNodes()):
                 c_i = 1 # unitary cost for each move
                 h_i = node.getHeuristic() 
@@ -399,17 +438,45 @@ class NovelLRTAnPuzzle():
 
                 
                 if "f(n)_disambiguity" in self.novelties: 
-                    if(f_i < lowest_cost_f):
-                        lowest_cost_f = f_i
-                        next_possible_states = [node]
-                    elif(f_i == lowest_cost_f):
-                        next_possible_states.append(node)
+                    if not(use_variant_disambiguity):
+                        if(f_i < lowest_cost_f):
+                            lowest_cost_f = f_i
+                            next_possible_states = [node]
+                        elif(f_i == lowest_cost_f):
+                            next_possible_states.append(node)
+                    else:     
+                        self.states_fn.append({"state": node,"value_f":f_i})
+                        if(f_i < lowest_cost_f):
+                            lowest_cost_f = f_i
+                            next_possible_states = [node]
+                        elif(f_i == lowest_cost_f):
+                            next_possible_states.append(node)
                 else:
                     if(f_i < lowest_cost_f):
                        lowest_cost_f = f_i
                        next_node = node
             
-            if "f(n)_disambiguity" in self.novelties: 
+            if "f(n)_disambiguity" in self.novelties:
+                
+                
+                if use_variant_disambiguity and len(next_possible_states) == 1:    #it's possible to have another variant removing the second conditions
+                   print("using variant on disambiguity ....\n") if verbose else 0
+                   # print("states_fn -> {}".format(len(self.states_fn)))
+                   next_possible_states = []
+                   
+                   for elem in self.states_fn:
+                       state = elem["state"]
+                       v = elem["value_f"]
+                       val_rel = (v/lowest_cost_f)-1  #how much bigger in percentage? 
+                       # print("v -> {}".format(v))
+                       # print("lowest_cost_f ->  {}".format( lowest_cost_f))
+                       # print("val_rel ->  {}".format( val_rel)) if verbose else 0
+                       
+                       if val_rel <= self.tollerance:
+                           next_possible_states.append(state)
+                        
+                   print("number of possible states {}".format(len(next_possible_states)))if verbose else 0
+                           
                 if not len(next_possible_states) == 1: # more choices 
                     next_node = self._oneStepCheck(next_possible_states)
                 else: 
@@ -539,6 +606,10 @@ class NovelLRTAEscape():
         self.depth_simulations = depth_simulations
         self.depth_cap = self.depth_simulations
         if "dynamic_depth_limit" in novelties:  self.depth_scale = 2
+        
+        if use_variant_disambiguity:
+            self.tollerance = 0.05
+            self.states_fn = []
     
     def _minFs(self, state):
         f_min = math.inf
@@ -631,6 +702,7 @@ class NovelLRTAEscape():
             lowest_cost_c = math.inf
             
             if "f(n)_disambiguity" in self.novelties: next_possible_states = []
+            if use_variant_disambiguity: self.states_fn = []
             for edge in actual_node.edges:
                 other_node = edge.getNode_b()
                 
@@ -653,12 +725,22 @@ class NovelLRTAEscape():
                 print("- Evaluating motion to {}, estimated cost f= c(s,s') + h(s') = {} + {} = {}".format(other_node.name, c_i,h_i,f_i)) if verbose else 0
                 
                 if "f(n)_disambiguity" in self.novelties:
-                    if(f_i < lowest_cost_f):
-                        lowest_cost_f = f_i
-                        lowest_cost_c = c_i
-                        next_possible_states = [other_state]
-                    elif(f_i == lowest_cost_f):
-                       next_possible_states.append(other_state)
+                    if not(use_variant_disambiguity):
+                        if(f_i < lowest_cost_f):
+                            lowest_cost_f = f_i
+                            lowest_cost_c = c_i
+                            next_possible_states = [other_state]
+                        elif(f_i == lowest_cost_f):
+                           next_possible_states.append(other_state)
+                    else:
+                        self.states_fn.append({"state": other_state,"value_f":f_i})
+                        if(f_i < lowest_cost_f):
+                            lowest_cost_f = f_i
+                            lowest_cost_c = c_i
+                            next_possible_states = [other_state]
+                        elif(f_i == lowest_cost_f):
+                           next_possible_states.append(other_state)
+                       
                 else:
                     if(f_i < lowest_cost_f):
                        lowest_cost_f = f_i
@@ -667,6 +749,25 @@ class NovelLRTAEscape():
                        chosen_edge = edge
                     
             if "f(n)_disambiguity" in self.novelties:
+                
+                if use_variant_disambiguity and len(next_possible_states) == 1:    #it's possible to have another variant removing the second conditions
+                    print("using variant on disambiguity ....\n")  
+                    # print("states_fn -> {}".format(len(self.states_fn)))
+                    next_possible_states = []
+                    
+                    for elem in self.states_fn:
+                        state = elem["state"]
+                        v = elem["value_f"]
+                        val_rel = (v/lowest_cost_f)-1  #how much bigger in percentage? 
+                        # print("v -> {}".format(v))
+                        # print("lowest_cost_f ->  {}".format( lowest_cost_f))
+                        # print("val_rel ->  {}".format( val_rel)) 
+                        
+                        if val_rel <= self.tollerance:
+                            next_possible_states.append(state)
+                            
+                    print("number of possible states {}".format(len(next_possible_states))) if verbose else 0
+                
                 # what choose?
                 if not len(next_possible_states) == 1: # more choices 
                     next_node = self._oneStepCheck(next_possible_states)

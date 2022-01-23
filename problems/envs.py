@@ -157,8 +157,8 @@ class Puzzle8(problem):
         super().__init__("8_puzzle", initial_state)
         self.starting_node = None
         
-        # select here other configutions
-        self.selectEasyState()
+        # select here other configurations
+        self.selectMidState()
         if load_h: self.loadHeuristics()
         self._isSolvable(initial_state)
         
